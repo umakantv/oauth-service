@@ -1,13 +1,17 @@
 module oauth-service
 
-go 1.19
+go 1.24.0
+
+toolchain go1.24.2
 
 require (
+	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.0
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/mattn/go-sqlite3 v1.14.16
 	github.com/umakantv/go-utils v0.0.2
 	go.uber.org/zap v1.24.0
+	golang.org/x/crypto v0.48.0
 )
 
 require (

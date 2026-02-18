@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth Service - Browser E2E Test UI</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        form { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        input { display: block; margin: 10px 0; padding: 5px; width: 300px; }
+        button { padding: 10px; background: #007bff; color: white; border: none; cursor: pointer; }
+        #output { margin-top: 20px; padding: 10px; background: #f4f4f4; white-space: pre-wrap; }
+        .section { margin-bottom: 30px; }
+    </style>
+</head>
+<body>
+    <h1>OAuth Service UI - Test Signup/Login/Me + OAuth Clients</h1>
+    <p>Use for end-to-end browser flow testing (cookie sessions via Redis, pw auth, OAuth clients, /token ready).</p>
+    <div id="output"></div>
+
+    <div class="section">
+        <h2>1. Signup (creates user with password)</h2>
+        <form id="signupForm">
+            <input type="text" id="signupName" placeholder="Name" required>
+            <input type="email" id="signupEmail" placeholder="Email" required>
+            <input type="password" id="signupPw" placeholder="Password" required>
+            <button type="submit">Signup</button>
+        </form>
+    </div>
+
+    <div class="section">
+        <h2>2. Login (sets cookie session in Redis)</h2>
+        <form id="loginForm">
+            <input type="email" id="loginEmail" placeholder="Email" required>
+            <input type="password" id="loginPw" placeholder="Password" required>
+            <button type="submit">Login</button>
+        </form>
+    </div>
+
+    <div class="section">
+        <h2>3. /me (uses session cookie)</h2>
+        <button id="meBtn">Get /me</button>
+    </div>
+
+    <div class="section">
+        <h2>4. Register OAuth Client (with callback URLs)</h2>
+        <form id="clientForm">
+            <input type="text" id="clientName" placeholder="App Name" required>
+            <input type="text" id="clientEmail" placeholder="Email">
+            <input type="text" id="clientRedirects" placeholder="redirect_uris (comma sep)" required value="http://localhost:3000/cb">
+            <button type="submit">Register Client</button>
+        </form>
+    </div>
+
+    <div class="section">
+        <h2>5. OAuth Authorize (confirmation page + code)</h2>
+        <p>Login first, register client, then click (enter client_id from reg response):</p>
+        <button id="oauthAuthBtn">Start OAuth Authorize</button>
+        <p>Uses redirect_uri=http://localhost:3001/cb for full flow (sample below).</p>
+    </div>
+
+    <div class="section">
+        <h2>6. OAuth Callback Test (/cb?code=... )</h2>
+        <p>After authorize approve, redirected here - complete exchange server-side (hides secret):</p>
+        <button id="cbTestBtn">Test Callback Exchange</button>
+        <p>(Uses sample client_id from .env; code from query)</p>
+    </div>
+
+    <script>
+        const output = document.getElementById('output');
+        const log = (msg) => { output.textContent += msg + '\n'; console.log(msg); };
+
+        // Helper fetch with credentials (cookies)
+        async function apiFetch(url, options = {}) {
+            options.credentials = 'include'; // Send cookies
+            options.headers = { 'Content-Type': 'application/json', ...options.headers };
+            try {
+                const res = await fetch(url, options);
+                const data = await res.json();
+                log(`API ${url}: ${JSON.stringify(data, null, 2)}`);
+                return data;
+            } catch (e) {
+                log(`Error: ${e}`);
+            }
+        }
+
+        // Signup
+        document.getElementById('signupForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await apiFetch('/signup', {
+                method: 'POST',
+                body: JSON.stringify({
+                    name: document.getElementById('signupName').value,
+                    email: document.getElementById('signupEmail').value,
+                    password: document.getElementById('signupPw').value
+                })
+            });
+        });
+
+        // Login
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await apiFetch('/login', {
+                method: 'POST',
+                body: JSON.stringify({
+                    email: document.getElementById('loginEmail').value,
+                    password: document.getElementById('loginPw').value
+                })
+            });
+        });
+
+        // /me
+        document.getElementById('meBtn').addEventListener('click', async () => {
+            await apiFetch('/me');
+        });
+
+        // OAuth Client Reg
+        document.getElementById('clientForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await apiFetch('/oauth/clients', {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer secret-token' }, // Admin token for client reg
+                body: JSON.stringify({
+                    name: document.getElementById('clientName').value,
+                    email: document.getElementById('clientEmail').value,
+                    redirect_uris: document.getElementById('clientRedirects').value
+                })
+            });
+        });
+
+        // OAuth Authorize - test confirmation page + code flow
+        // Assumes logged in + registered client; opens /oauth/authorize?...
+        // Updated for sample redirect_uri=http://localhost:3001/cb (for /cb test)
+        document.getElementById('oauthAuthBtn').addEventListener('click', () => {
+            // Example: after client reg , use its client_id (manual for demo)
+            // In practice, capture from client create response
+            // Use sample client_id=client_ea34f7d4402c90adb8ccd3b4 from .env
+            const clientId = prompt('Enter client_id (use sample: client_ea34f7d4402c90adb8ccd3b4):', 'client_ea34f7d4402c90adb8ccd3b4');
+            const redirect = 'http://localhost:3001/cb'; // Matches sample .env config
+            const authUrl = `/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirect)}&scope=openid`;
+            window.open(authUrl, '_blank');
+        });
+
+        // OAuth Callback Test - /cb?code=... (simulates client app)
+        // Calls server-side /oauth/callback?code=...&client_id=... (hides secret)
+        // Extract code from URL query if present (after redirect)
+        document.getElementById('cbTestBtn').addEventListener('click', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            const clientId = prompt('Enter client_id for exchange (sample from .env):', 'client_ea34f7d4402c90adb8ccd3b4');
+            if (code) {
+                apiFetch(`/oauth/callback?code=${code}&client_id=${clientId}`);
+            } else {
+                alert('No ?code in URL - trigger authorize first to redirect here');
+            }
+        });
+
+        // Auto-test if on /cb page with code (from redirect)
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('code')) {
+            log(`Detected OAuth callback with code: ${urlParams.get('code')}`);
+            // Auto trigger exchange test
+        }
+
+        log('UI loaded - test flows in browser (ensure server running with Redis)');
+    </script>
+</body>
+</html>

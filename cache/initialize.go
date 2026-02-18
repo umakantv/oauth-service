@@ -9,10 +9,20 @@ import (
 )
 
 func InitializeCache() cache.Cache {
-	cache, err := cache.New(cache.Config{Type: "memory"})
+	// Switched to Redis for persistent session storage (as specified)
+	// Assumes local Redis running at localhost:6379 (user-managed)
+	// Enables cookie sessions for /login /me etc. across restarts
+	config := cache.Config{
+		Type:          "redis",
+		RedisAddr:     "localhost:6379",
+		RedisPassword: "",
+		RedisDB:       0,
+	}
+	cache, err := cache.New(config)
 	if err != nil {
-		logger.Error("Failed to initialize cache:", zap.Error(err))
+		logger.Error("Failed to initialize Redis cache:", zap.Error(err))
 		os.Exit(1)
 	}
+	logger.Info("Redis cache initialized for persistent sessions")
 	return cache
 }
