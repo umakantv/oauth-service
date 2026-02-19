@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth Service</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+            background: #f0f2f5;
+            color: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 40px 16px;
+        }
+        .container {
+            width: 100%;
+            max-width: 480px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 24px;
+            font-size: 28px;
+            color: #16213e;
+        }
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            padding: 32px;
+            margin-bottom: 20px;
+        }
+        .card h2 {
+            margin-bottom: 20px;
+            font-size: 20px;
+            color: #16213e;
+        }
+        .card h3 {
+            margin-bottom: 14px;
+            font-size: 17px;
+            color: #16213e;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            font-size: 14px;
+            color: #444;
+        }
+        input[type="text"],
+        input[type="email"],
+        input[type="password"],
+        input[type="url"],
+        textarea {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 15px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+        textarea { resize: vertical; min-height: 60px; }
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #0f3460;
+            box-shadow: 0 0 0 3px rgba(15,52,96,0.1);
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-primary {
+            background: #0f3460;
+            color: #fff;
+        }
+        .btn-primary:hover { background: #16213e; }
+        .btn-secondary {
+            background: #e94560;
+            color: #fff;
+            margin-top: 8px;
+        }
+        .btn-secondary:hover { background: #c73e54; }
+        .btn-outline {
+            background: transparent;
+            color: #0f3460;
+            border: 2px solid #0f3460;
+        }
+        .btn-outline:hover { background: #0f3460; color: #fff; }
+        .btn-success {
+            background: #059669;
+            color: #fff;
+        }
+        .btn-success:hover { background: #047857; }
+        .btn-sm {
+            width: auto;
+            padding: 8px 16px;
+            font-size: 13px;
+            display: inline-block;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #888;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+        }
+        .tab.active {
+            color: #0f3460;
+            border-bottom-color: #0f3460;
+        }
+        .tab:hover { color: #0f3460; }
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 14px;
+            display: none;
+        }
+        .alert-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+        .alert-success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #6ee7b7;
+        }
+        .alert-info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+        }
+        .user-info {
+            text-align: center;
+        }
+        .user-info .avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: #0f3460;
+            color: #fff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+        .user-info p {
+            margin: 4px 0;
+            color: #555;
+        }
+        .user-info .name {
+            font-size: 22px;
+            font-weight: 700;
+            color: #16213e;
+        }
+        .user-info .email {
+            font-size: 15px;
+            color: #666;
+        }
+        .user-info .meta {
+            font-size: 13px;
+            color: #999;
+            margin-top: 8px;
+        }
+        .hidden { display: none !important; }
+        .link-btn {
+            background: none;
+            border: none;
+            color: #0f3460;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: underline;
+            padding: 0;
+            width: auto;
+            font-weight: 400;
+        }
+        .link-btn:hover { color: #e94560; }
+        .footer-text {
+            text-align: center;
+            margin-top: 12px;
+            font-size: 14px;
+            color: #888;
+        }
+        .separator {
+            border: none;
+            border-top: 1px solid #e5e7eb;
+            margin: 24px 0;
+        }
+        .consent-app-name {
+            font-size: 22px;
+            font-weight: 700;
+            color: #16213e;
+            margin-bottom: 4px;
+        }
+        .consent-detail {
+            font-size: 14px;
+            color: #555;
+            margin: 4px 0;
+        }
+        .consent-scope {
+            display: inline-block;
+            background: #eef2ff;
+            color: #3730a3;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            margin: 2px 4px 2px 0;
+        }
+        .consent-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .consent-actions button { flex: 1; }
+        .client-credential {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 12px;
+            word-break: break-all;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+        .client-credential label {
+            font-size: 12px;
+            color: #666;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+        .client-credential .val {
+            color: #111;
+        }
+        .small-text {
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 OAuth Service</h1>
+
+        <!-- Alert -->
+        <div id="alert" class="alert"></div>
+
+        <!-- ============================================= -->
+        <!-- NORMAL MODE: Auth Forms + Dashboard           -->
+        <!-- ============================================= -->
+
+        <!-- Auth Forms (shown when not logged in, normal mode) -->
+        <div id="auth-section" class="card hidden">
+            <div class="tabs">
+                <div class="tab active" id="tab-login" onclick="switchTab('login')">Login</div>
+                <div class="tab" id="tab-signup" onclick="switchTab('signup')">Sign Up</div>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label for="login-email">Email</label>
+                    <input type="email" id="login-email" placeholder="you@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn-primary">Login</button>
+            </form>
+
+            <!-- Signup Form -->
+            <form id="signup-form" class="hidden" onsubmit="handleSignup(event)">
+                <div class="form-group">
+                    <label for="signup-name">Name</label>
+                    <input type="text" id="signup-name" placeholder="John Doe" required>
+                </div>
+                <div class="form-group">
+                    <label for="signup-email">Email</label>
+                    <input type="email" id="signup-email" placeholder="you@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="signup-password">Password</label>
+                    <input type="password" id="signup-password" placeholder="Min 6 characters" required minlength="6">
+                </div>
+                <button type="submit" class="btn-primary">Create Account</button>
+            </form>
+        </div>
+
+        <!-- Dashboard (shown when logged in, normal mode) -->
+        <div id="dashboard-section" class="card hidden">
+            <div class="user-info">
+                <div class="avatar" id="user-avatar"></div>
+                <p class="name" id="user-name"></p>
+                <p class="email" id="user-email"></p>
+                <p class="meta" id="user-meta"></p>
+            </div>
+            <br>
+            <button class="btn-outline" onclick="checkMe()">Refresh /me</button>
+            <button class="btn-secondary" onclick="handleLogout()">Logout</button>
+        </div>
+
+        <!-- Register OAuth Client (shown when logged in, normal mode) -->
+        <div id="register-client-section" class="card hidden">
+            <h2>Register OAuth Client</h2>
+            <form id="register-client-form" onsubmit="handleRegisterClient(event)">
+                <div class="form-group">
+                    <label for="rc-name">Application Name *</label>
+                    <input type="text" id="rc-name" placeholder="My Web App" required>
+                </div>
+                <div class="form-group">
+                    <label for="rc-description">Description</label>
+                    <input type="text" id="rc-description" placeholder="A brief description of your app">
+                </div>
+                <div class="form-group">
+                    <label for="rc-redirect-uris">Redirect URIs * <span style="font-weight:400;color:#999">(one per line)</span></label>
+                    <textarea id="rc-redirect-uris" placeholder="https://myapp.example.com/callback" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="rc-scopes">Scopes <span style="font-weight:400;color:#999">(space-separated)</span></label>
+                    <input type="text" id="rc-scopes" placeholder="openid profile email" value="openid profile email">
+                </div>
+                <button type="submit" class="btn-primary">Register Client</button>
+            </form>
+
+            <!-- Show credentials after registration -->
+            <div id="rc-result" class="hidden">
+                <hr class="separator">
+                <h3>✅ Client Registered!</h3>
+                <p class="small-text">Save these credentials securely — the client secret will not be shown again.</p>
+                <div class="client-credential">
+                    <label>Client ID</label>
+                    <div class="val" id="rc-result-client-id"></div>
+                </div>
+                <div class="client-credential">
+                    <label>Client Secret</label>
+                    <div class="val" id="rc-result-client-secret"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================= -->
+        <!-- OAUTH FLOW MODE: Consent / Login for OAuth    -->
+        <!-- ============================================= -->
+
+        <!-- OAuth: Login required (shown when not logged in during OAuth flow) -->
+        <div id="oauth-login-section" class="card hidden">
+            <h2>Sign in to continue</h2>
+            <p class="consent-detail" style="margin-bottom:16px">
+                <strong id="oauth-login-app-name"></strong> is requesting access to your account.
+                Please log in or create an account to continue.
+            </p>
+            <div class="tabs">
+                <div class="tab active" id="oauth-tab-login" onclick="switchOAuthTab('login')">Login</div>
+                <div class="tab" id="oauth-tab-signup" onclick="switchOAuthTab('signup')">Sign Up</div>
+            </div>
+
+            <form id="oauth-login-form" onsubmit="handleOAuthLogin(event)">
+                <div class="form-group">
+                    <label for="oauth-login-email">Email</label>
+                    <input type="email" id="oauth-login-email" placeholder="you@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="oauth-login-password">Password</label>
+                    <input type="password" id="oauth-login-password" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn-primary">Login & Continue</button>
+            </form>
+
+            <form id="oauth-signup-form" class="hidden" onsubmit="handleOAuthSignup(event)">
+                <div class="form-group">
+                    <label for="oauth-signup-name">Name</label>
+                    <input type="text" id="oauth-signup-name" placeholder="John Doe" required>
+                </div>
+                <div class="form-group">
+                    <label for="oauth-signup-email">Email</label>
+                    <input type="email" id="oauth-signup-email" placeholder="you@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="oauth-signup-password">Password</label>
+                    <input type="password" id="oauth-signup-password" placeholder="Min 6 characters" required minlength="6">
+                </div>
+                <button type="submit" class="btn-primary">Create Account & Continue</button>
+            </form>
+        </div>
+
+        <!-- OAuth: Consent screen (shown when logged in during OAuth flow) -->
+        <div id="oauth-consent-section" class="card hidden">
+            <h2>Authorize Application</h2>
+            <div style="text-align:center; margin-bottom:16px">
+                <p class="consent-app-name" id="consent-app-name"></p>
+                <p class="consent-detail" id="consent-app-desc"></p>
+            </div>
+            <hr class="separator">
+            <p class="consent-detail">
+                <strong id="consent-user-name"></strong> (<span id="consent-user-email"></span>),
+                this application is requesting the following permissions:
+            </p>
+            <div id="consent-scopes" style="margin: 12px 0;"></div>
+            <p class="consent-detail" style="margin-top:12px">
+                It will redirect you to: <br>
+                <code id="consent-redirect-uri" style="font-size:13px; color:#0f3460;"></code>
+            </p>
+            <div class="consent-actions">
+                <button class="btn-secondary" onclick="handleDenyConsent()">Deny</button>
+                <button class="btn-success" onclick="handleApproveConsent()">Authorize</button>
+            </div>
+            <p class="small-text" style="text-align:center; margin-top:12px">
+                Signed in as <strong id="consent-user-email2"></strong> ·
+                <button class="link-btn" onclick="handleOAuthSwitchAccount()">use a different account</button>
+            </p>
+        </div>
+
+        <!-- OAuth: Error display -->
+        <div id="oauth-error-section" class="card hidden">
+            <h2>⚠️ Authorization Error</h2>
+            <p id="oauth-error-message" class="consent-detail" style="color:#991b1b"></p>
+        </div>
+
+        <p class="footer-text">
+            <a href="/health" target="_blank" style="color:#0f3460;">/health</a>
+        </p>
+    </div>
+
+    <script>
+        // ---- State ----
+        let currentUser = null;
+        let oauthFlowData = null;  // stored when in OAuth flow mode
+        const isOAuthFlow = window.location.pathname === '/oauth/initialize';
+
+        // ---- Tab switching (normal mode) ----
+        function switchTab(tab) {
+            document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+            document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
+            document.getElementById('login-form').classList.toggle('hidden', tab !== 'login');
+            document.getElementById('signup-form').classList.toggle('hidden', tab !== 'signup');
+            hideAlert();
+        }
+
+        // ---- Tab switching (OAuth login mode) ----
+        function switchOAuthTab(tab) {
+            document.getElementById('oauth-tab-login').classList.toggle('active', tab === 'login');
+            document.getElementById('oauth-tab-signup').classList.toggle('active', tab === 'signup');
+            document.getElementById('oauth-login-form').classList.toggle('hidden', tab !== 'login');
+            document.getElementById('oauth-signup-form').classList.toggle('hidden', tab !== 'signup');
+            hideAlert();
+        }
+
+        // ---- Alerts ----
+        function showAlert(msg, type) {
+            const el = document.getElementById('alert');
+            el.textContent = msg;
+            el.className = 'alert alert-' + type;
+            el.style.display = 'block';
+        }
+        function hideAlert() {
+            document.getElementById('alert').style.display = 'none';
+        }
+
+        // ---- Hide all main sections ----
+        function hideAllSections() {
+            ['auth-section', 'dashboard-section', 'register-client-section',
+             'oauth-login-section', 'oauth-consent-section', 'oauth-error-section'
+            ].forEach(id => document.getElementById(id).classList.add('hidden'));
+        }
+
+        // ---- Show / hide sections (normal mode) ----
+        function showDashboard(user) {
+            currentUser = user;
+            hideAllSections();
+            document.getElementById('dashboard-section').classList.remove('hidden');
+            document.getElementById('register-client-section').classList.remove('hidden');
+            document.getElementById('user-avatar').textContent = user.name.charAt(0).toUpperCase();
+            document.getElementById('user-name').textContent = user.name;
+            document.getElementById('user-email').textContent = user.email;
+            document.getElementById('user-meta').textContent =
+                'ID: ' + user.id + ' • Joined: ' + new Date(user.created_at).toLocaleDateString();
+        }
+        function showAuth() {
+            currentUser = null;
+            hideAllSections();
+            document.getElementById('auth-section').classList.remove('hidden');
+        }
+
+        // ---- API helpers ----
+        async function api(method, path, body) {
+            const opts = {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+            };
+            if (body) opts.body = JSON.stringify(body);
+            const res = await fetch(path, opts);
+            const data = await res.json();
+            return { ok: res.ok, status: res.status, data: data };
+        }
+
+        // ====================================================
+        // NORMAL MODE: Login / Signup / Dashboard
+        // ====================================================
+
+        async function handleSignup(e) {
+            e.preventDefault();
+            hideAlert();
+            const name = document.getElementById('signup-name').value.trim();
+            const email = document.getElementById('signup-email').value.trim();
+            const password = document.getElementById('signup-password').value;
+
+            const res = await api('POST', '/signup', { name, email, password });
+            if (res.ok) {
+                showAlert('Account created! You are now logged in.', 'success');
+                showDashboard(res.data);
+            } else {
+                showAlert(res.data.Message || 'Signup failed', 'error');
+            }
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            hideAlert();
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+
+            const res = await api('POST', '/login', { email, password });
+            if (res.ok) {
+                showAlert('Logged in successfully!', 'success');
+                showDashboard(res.data);
+            } else {
+                showAlert(res.data.Message || 'Login failed', 'error');
+            }
+        }
+
+        async function checkMe() {
+            hideAlert();
+            const res = await api('GET', '/me');
+            if (res.ok) {
+                showAlert('Session is valid ✓', 'success');
+                showDashboard(res.data);
+            } else {
+                showAlert(res.data.Message || 'Not logged in', 'error');
+                showAuth();
+            }
+        }
+
+        async function handleLogout() {
+            hideAlert();
+            await api('POST', '/logout');
+            currentUser = null;
+            showAlert('Logged out.', 'success');
+            showAuth();
+        }
+
+        // ====================================================
+        // REGISTER OAUTH CLIENT (from Dashboard)
+        // ====================================================
+
+        async function handleRegisterClient(e) {
+            e.preventDefault();
+            hideAlert();
+
+            const name = document.getElementById('rc-name').value.trim();
+            const description = document.getElementById('rc-description').value.trim();
+            const redirectURIsRaw = document.getElementById('rc-redirect-uris').value.trim();
+            const scopes = document.getElementById('rc-scopes').value.trim();
+
+            const redirect_uris = redirectURIsRaw.split('\n').map(u => u.trim()).filter(u => u);
+            if (redirect_uris.length === 0) {
+                showAlert('At least one redirect URI is required.', 'error');
+                return;
+            }
+
+            const res = await api('POST', '/oauth/register-client', {
+                name, description, redirect_uris, scopes
+            });
+
+            if (res.ok) {
+                showAlert('OAuth client registered successfully!', 'success');
+                document.getElementById('rc-result').classList.remove('hidden');
+                document.getElementById('rc-result-client-id').textContent = res.data.client_id;
+                document.getElementById('rc-result-client-secret').textContent = res.data.client_secret;
+                // Reset the form
+                document.getElementById('register-client-form').reset();
+                document.getElementById('rc-scopes').value = 'openid profile email';
+            } else {
+                showAlert(res.data.Message || 'Failed to register client', 'error');
+            }
+        }
+
+        // ====================================================
+        // OAUTH FLOW MODE
+        // ====================================================
+
+        function showOAuthError(msg) {
+            hideAllSections();
+            document.getElementById('oauth-error-section').classList.remove('hidden');
+            document.getElementById('oauth-error-message').textContent = msg;
+        }
+
+        function showOAuthLogin(data) {
+            hideAllSections();
+            document.getElementById('oauth-login-section').classList.remove('hidden');
+            document.getElementById('oauth-login-app-name').textContent = data.client_name || 'An application';
+        }
+
+        function showOAuthConsent(data) {
+            hideAllSections();
+            const user = data.user;
+            currentUser = user;
+
+            document.getElementById('oauth-consent-section').classList.remove('hidden');
+            document.getElementById('consent-app-name').textContent = data.client_name || 'Application';
+            document.getElementById('consent-app-desc').textContent = data.description || '';
+            document.getElementById('consent-user-name').textContent = user.name;
+            document.getElementById('consent-user-email').textContent = user.email;
+            document.getElementById('consent-user-email2').textContent = user.email;
+            document.getElementById('consent-redirect-uri').textContent = data.redirect_uri;
+
+            // Render scopes
+            const scopesContainer = document.getElementById('consent-scopes');
+            scopesContainer.innerHTML = '';
+            const scopes = (data.scope || 'openid').split(' ').filter(s => s);
+            scopes.forEach(s => {
+                const span = document.createElement('span');
+                span.className = 'consent-scope';
+                span.textContent = s;
+                scopesContainer.appendChild(span);
+            });
+        }
+
+        async function initOAuthFlow() {
+            const params = new URLSearchParams(window.location.search);
+            const clientId = params.get('client_id');
+            const redirectUri = params.get('redirect_uri');
+
+            if (!clientId || !redirectUri) {
+                showOAuthError('Missing required parameters: client_id and redirect_uri are required.');
+                return;
+            }
+
+            // Validate via the backend API
+            const qs = window.location.search;
+            const res = await api('GET', '/oauth/validate-init' + qs);
+
+            if (!res.ok) {
+                showOAuthError(res.data.Message || 'Invalid OAuth request.');
+                return;
+            }
+
+            oauthFlowData = res.data;
+
+            if (res.data.logged_in && res.data.user) {
+                showOAuthConsent(res.data);
+            } else {
+                showOAuthLogin(res.data);
+            }
+        }
+
+        // ---- OAuth Login (during flow) ----
+        async function handleOAuthLogin(e) {
+            e.preventDefault();
+            hideAlert();
+            const email = document.getElementById('oauth-login-email').value.trim();
+            const password = document.getElementById('oauth-login-password').value;
+
+            const res = await api('POST', '/login', { email, password });
+            if (res.ok) {
+                // Now re-validate the OAuth flow (user is now logged in)
+                await initOAuthFlow();
+            } else {
+                showAlert(res.data.Message || 'Login failed', 'error');
+            }
+        }
+
+        async function handleOAuthSignup(e) {
+            e.preventDefault();
+            hideAlert();
+            const name = document.getElementById('oauth-signup-name').value.trim();
+            const email = document.getElementById('oauth-signup-email').value.trim();
+            const password = document.getElementById('oauth-signup-password').value;
+
+            const res = await api('POST', '/signup', { name, email, password });
+            if (res.ok) {
+                await initOAuthFlow();
+            } else {
+                showAlert(res.data.Message || 'Signup failed', 'error');
+            }
+        }
+
+        // ---- Consent: Approve ----
+        async function handleApproveConsent() {
+            hideAlert();
+            if (!oauthFlowData) return;
+
+            const res = await api('POST', '/oauth/approve', {
+                client_id:    oauthFlowData.client_id,
+                redirect_uri: oauthFlowData.redirect_uri,
+                scope:        oauthFlowData.scope,
+                state:        oauthFlowData.state,
+            });
+
+            if (res.ok) {
+                // Redirect the user back to the client application with the auth code
+                window.location.href = res.data.redirect_url;
+            } else {
+                showAlert(res.data.Message || 'Authorization failed', 'error');
+            }
+        }
+
+        // ---- Consent: Deny ----
+        function handleDenyConsent() {
+            if (!oauthFlowData) return;
+            let redirectUrl = oauthFlowData.redirect_uri + '?error=access_denied&error_description=The+user+denied+the+request';
+            if (oauthFlowData.state) {
+                redirectUrl += '&state=' + encodeURIComponent(oauthFlowData.state);
+            }
+            window.location.href = redirectUrl;
+        }
+
+        // ---- Switch account during OAuth ----
+        async function handleOAuthSwitchAccount() {
+            await api('POST', '/logout');
+            currentUser = null;
+            hideAlert();
+            showOAuthLogin(oauthFlowData);
+        }
+
+        // ====================================================
+        // INIT: Decide which mode to boot into
+        // ====================================================
+        (async function init() {
+            if (isOAuthFlow) {
+                await initOAuthFlow();
+            } else {
+                // Normal mode: check if already logged in
+                const res = await api('GET', '/me');
+                if (res.ok) {
+                    showDashboard(res.data);
+                } else {
+                    showAuth();
+                }
+            }
+        })();
+    </script>
+</body>
+</html>

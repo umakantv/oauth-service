@@ -2,8 +2,12 @@ package handlers
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -46,6 +50,7 @@ func (h *UserHandler) logRequest(ctx context.Context, level string, message stri
 	if auth != nil {
 		logMsg += " - client:" + auth.Client
 	}
+	logMsg += " - " + message
 
 	// Add custom fields
 	allFields := append([]zap.Field{
@@ -62,6 +67,37 @@ func (h *UserHandler) logRequest(ctx context.Context, level string, message stri
 	case "debug":
 		logger.Debug(logMsg, allFields...)
 	}
+}
+
+// hashPassword hashes a password with a random salt using SHA-256
+func hashPassword(password string) (string, error) {
+	salt := make([]byte, 16)
+	if _, err := rand.Read(salt); err != nil {
+		return "", fmt.Errorf("failed to generate salt: %w", err)
+	}
+	saltHex := hex.EncodeToString(salt)
+	hash := sha256.Sum256([]byte(saltHex + password))
+	return saltHex + ":" + hex.EncodeToString(hash[:]), nil
+}
+
+// checkPassword verifies a password against its stored hash
+func checkPassword(password, stored string) bool {
+	parts := strings.SplitN(stored, ":", 2)
+	if len(parts) != 2 {
+		return false
+	}
+	salt := parts[0]
+	hash := sha256.Sum256([]byte(salt + password))
+	return hex.EncodeToString(hash[:]) == parts[1]
+}
+
+// generateSessionToken generates a cryptographically secure session token
+func generateSessionToken() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", fmt.Errorf("failed to generate session token: %w", err)
+	}
+	return hex.EncodeToString(b), nil
 }
 
 // GetUsers handles GET /users - list all users
@@ -171,18 +207,27 @@ func (h *UserHandler) CreateUser(ctx context.Context, w http.ResponseWriter, r *
 	}
 
 	// Validate input
-	if req.Name == "" || req.Email == "" {
+	if req.Name == "" || req.Email == "" || req.Password == "" {
 		h.logRequest(ctx, "error", "Missing required fields", zap.String("name", req.Name), zap.String("email", req.Email))
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(errs.NewValidationError("Name and email are required"))
+		json.NewEncoder(w).Encode(errs.NewValidationError("Name, email, and password are required"))
 		return
 	}
 
 	h.logRequest(ctx, "info", "Creating user", zap.String("name", req.Name), zap.String("email", req.Email))
 
+	// Hash the password
+	hashedPassword, err := hashPassword(req.Password)
+	if err != nil {
+		h.logRequest(ctx, "error", "Failed to hash password", zap.Error(err))
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(errs.NewInternalServerError("Failed to create user"))
+		return
+	}
+
 	// Insert user
-	result, err := h.db.Exec("INSERT INTO users (name, email, created_at, updated_at) VALUES (?, ?, ?, ?)",
-		req.Name, req.Email, time.Now(), time.Now())
+	result, err := h.db.Exec("INSERT INTO users (name, email, password, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+		req.Name, req.Email, hashedPassword, time.Now(), time.Now())
 	if err != nil {
 		h.logRequest(ctx, "error", "Failed to create user", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
@@ -246,6 +291,17 @@ func (h *UserHandler) UpdateUser(ctx context.Context, w http.ResponseWriter, r *
 	if req.Email != "" {
 		setParts = append(setParts, "email = ?")
 		args = append(args, req.Email)
+	}
+	if req.Password != "" {
+		hashedPassword, err := hashPassword(req.Password)
+		if err != nil {
+			h.logRequest(ctx, "error", "Failed to hash password", zap.Error(err))
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(errs.NewInternalServerError("Failed to update user"))
+			return
+		}
+		setParts = append(setParts, "password = ?")
+		args = append(args, hashedPassword)
 	}
 
 	if len(setParts) == 0 {
