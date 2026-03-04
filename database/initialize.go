@@ -11,10 +11,18 @@ import (
 )
 
 func InitializeDatabase() *sqlx.DB {
+	dbDriver := os.Getenv("DRIVER")
+	if dbDriver == "" {
+		dbDriver = "sqlite3"
+	}
+	dbFile := os.Getenv("DB")
+	if dbFile == "" {
+		dbFile = "user_service.db"
+	}
 	// Database configuration for SQLite
 	config := db.DatabaseConfig{
-		DRIVER: "sqlite3",
-		DB:     "./oauth_service.db",
+		DRIVER: dbDriver,
+		DB:     dbFile,
 	}
 
 	dbConn := db.GetDBConnection(config)
